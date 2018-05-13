@@ -34,3 +34,24 @@ def load_to_postgres(df, table):
 
     conn.commit()
     cur.close()
+
+
+def extract_data(output, sql_query):
+    """
+    This function loads a dataframe into a Postgres table.
+
+    :param sql_query: Query to run in Postgres
+    :type sql_query: string
+    """
+    try:
+        # Get the connection to the postgres database
+        conn = psycopg2.connect("host=localhost dbname=secretescapes user=eberto")
+        cur = conn.cursor()
+        with open(output, "w") as file:
+            cur.copy_expert(sql_query, file)
+    except Exception as e:
+        print("can't connect. Invalid dbname, user or password?")
+        print(e)
+
+    conn.commit()
+    cur.close()

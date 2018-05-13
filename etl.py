@@ -1,6 +1,6 @@
 import xml.etree.ElementTree
 import pandas as pd
-from functions import load_to_postgres
+from functions import load_to_postgres, extract_data
 import logging
 
 # set logging configuration
@@ -75,3 +75,87 @@ def load_sales(input):
     # load the dataframe to postgres
     logger.info('Loading into Postgres...')
     load_to_postgres(df_xml, 'sales')
+
+
+def extract_task1(output):
+    """
+    Extract the data from Postgres passing a SQL query
+
+    :param output: output location
+    :type output: string
+    """
+
+    logger.info('Extracting data to {}...'.format(output))
+    sql_task = """
+                COPY(
+                    SELECT title, sales.country, sales.product_type, rate, discount,
+                    start_date, end_date, EXTRACT(DAY FROM end_date-start_date) AS sale_lenght, count(*)
+                    FROM sales
+                    left join bookings on bookings.id = sales.id
+                    group by title , sales.country, sales.product_type, rate, discount,
+                    start_date , end_date, sale_lenght
+                    order by count(*) desc
+                ) TO
+                STDOUT
+                WITH
+                CSV
+                HEADER
+                DELIMITER
+                ','
+                """
+    extract_data(output, sql_task)
+
+
+def extract_task2(output):
+    """
+    Extract the data from Postgres passing a SQL query
+
+    :param output: output location
+    :type output: string
+    """
+
+    logger.info('Extracting data to {}...'.format(output))
+    sql_task = """
+                COPY(
+                    SELECT salename as booking_name, title, rate, discount, checkin, checkout,
+                      to_char(checkin, 'Month') as month_checkin,
+                      to_char(checkout, 'Month') as month_checkout,
+                      to_char(checkin, 'Day') as day_checkin,
+                      to_char(checkout, 'Day') as day_checkout,
+                      (checkout-checkin) AS booking_length,
+                      CASE
+                        WHEN to_char(checkin, 'MM-DD') between '01-01' and '03-19' THEN 'Winter'
+                        WHEN to_char(checkin, 'MM-DD') between '12-21' and '12-31' THEN 'Winter'
+                        WHEN to_char(checkin, 'MM-DD') between '03-20' and '06-20' THEN 'Spring'
+                        WHEN to_char(checkin, 'MM-DD') between '06-21' and '09-21' THEN 'Summer'
+                        WHEN to_char(checkin, 'MM-DD') between '09-22' and '12-20' THEN 'Autumn'
+                        ELSE 'UNKNOWN'
+                      END AS season,
+                      count(*) as bookings
+                    FROM bookings
+                    LEFT JOIN sales on bookings.id = sales.id
+                    group by booking_name, title, rate, discount, checkin , checkout, month_checkin, month_checkout,
+                      day_checkin, day_checkout, booking_length, season
+                    order by count(*) desc
+                ) TO
+                STDOUT
+                WITH
+                CSV
+                HEADER
+                DELIMITER
+                ','
+                """
+    extract_data(output, sql_task)
+
+
+if __name__ == '__main__':
+    # Load the sales
+    load_sales("input/sales.xml")
+
+    # Load bookings
+    load_bookings("input/bookings.csv")
+
+    # Extract the output of both tasks
+    extract_task1("output/data-task1-output.csv")
+    extract_task2("output/data-task2-output.csv")
+
