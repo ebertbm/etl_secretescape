@@ -4,7 +4,7 @@ Once the data is loaded, it runs two queries and extracts two summary reports in
 
 The ETL was built in Python 3.6.
 
-With more time I would have included some unit tests to make sure that the data is loaded and extracted correctly. Also, I
+With more time I would have included some unit tests to make sure(in a more automated fashion) that the data is loaded and extracted correctly. Also, I
 would have added some missing nodes that where in a deeper level in sales XML like images and categories.
 
 ## Installation requirements
